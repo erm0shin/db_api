@@ -3,7 +3,7 @@ package application.utils.responses;
 import application.models.Thread;
 
 @SuppressWarnings("unused")
-public class SuccessThreadResponse {
+public class ThreadResponse {
     private String author;
     private String created;
     private String forum;
@@ -13,7 +13,7 @@ public class SuccessThreadResponse {
     private String title;
     private Integer votes;
 
-    public SuccessThreadResponse(Thread thread) {
+    public ThreadResponse(Thread thread) {
         this.author = thread.getAuthor();
         this.created = thread.getCreated();
         this.forum = thread.getForum();

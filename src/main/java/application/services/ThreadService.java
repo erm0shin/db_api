@@ -68,4 +68,9 @@ public class ThreadService {
         final String query = "SELECT * FROM threads t WHERE t.id = ?";
         return template.queryForObject(query, THREAD_ROW_MAPPER, id);
     }
+
+    public Thread getThreadBySlug(String slug) {
+        final String query = "SELECT * FROM threads t WHERE LOWER(t.slug) = LOWER(?)";
+        return template.queryForObject(query, THREAD_ROW_MAPPER, slug);
+    }
 }

@@ -3,14 +3,14 @@ package application.utils.responses;
 import application.models.Forum;
 
 @SuppressWarnings("unused")
-public class SuccessForumResponse {
+public class ForumResponse {
     private Long posts;
     private String slug;
     private Integer threads;
     private String title;
     private String user;
 
-    public SuccessForumResponse(Forum forum) {
+    public ForumResponse(Forum forum) {
         this.posts = forum.getPosts();
         this.slug = forum.getSlug();
         this.threads = forum.getThreads();

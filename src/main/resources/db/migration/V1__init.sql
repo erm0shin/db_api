@@ -14,9 +14,9 @@ DROP TABLE IF EXISTS forum_members CASCADE;
 
 CREATE TABLE users (
   id        BIGSERIAL  PRIMARY KEY,
-  email     TEXT       NOT NULL,
+  email     TEXT       NOT NULL UNIQUE,
   fullname  TEXT       NOT NULL,
-  nickname  TEXT,
+  nickname  TEXT       UNIQUE,
   about     TEXT
 );
 
@@ -24,18 +24,18 @@ CREATE TABLE users (
 CREATE TABLE forums (
   id        BIGSERIAL   PRIMARY KEY,
   posts     BIGINT,
-  slug      TEXT        NOT NULL,
+  slug      TEXT        NOT NULL UNIQUE,
   threads   INT,
   title     TEXT        NOT NULL,
-  "user"    TEXT        NOT NULL
+  "user"    TEXT        NOT NULL UNIQUE
 );
 
 
 CREATE TABLE threads (
-  id        SERIAL     PRIMARY KEY,
-  author    TEXT          NOT NULL,
+  id        SERIAL        PRIMARY KEY,
+  author    TEXT          NOT NULL UNIQUE,
   created   TIMESTAMPTZ,
-  forum     TEXT,
+  forum     TEXT          UNIQUE,
   message   TEXT          NOT NULL,
   slug      TEXT          UNIQUE,
   title     TEXT          NOT NULL,
@@ -45,16 +45,16 @@ CREATE TABLE threads (
 
 CREATE TABLE posts (
   id          BIGSERIAL     PRIMARY KEY,
-  author      TEXT          NOT NULL,
-  created     TIMESTAMPTZ   NOT NULL,
-  forum       TEXT,
-  isEdited    BOOLEAN       DEFAULT FALSE,
+  author      TEXT          NOT NULL UNIQUE,
+  created     TIMESTAMPTZ,
+  forum       TEXT          UNIQUE,
+  isEdited    BOOLEAN       NOT NULL DEFAULT FALSE,
   message     TEXT          NOT NULL,
   parent      BIGINT,
   thread_id   INT           NOT NULL
 );
 
-
+--Стоит вопрос об уникальности!!!
 CREATE TABLE votes (
   user_id     BIGINT    NOT NULL,
   thread_id   INT       NOT NULL,
