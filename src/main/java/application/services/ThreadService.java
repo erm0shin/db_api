@@ -36,7 +36,7 @@ public class ThreadService {
 
     //Упростить преобразование времени!!!!!!!!
 
-    private static final RowMapper<Thread> THREAD_MAP = (res, num) -> new Thread(res.getInt("id"),
+    private static final RowMapper<Thread> THREAD_ROW_MAPPER = (res, num) -> new Thread(res.getInt("id"),
             res.getString("author"), LocalDateTime.ofInstant(res.getTimestamp("created").toInstant(),
             ZoneOffset.ofHours(0)).format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")),
             res.getString("forum"), res.getString("mesage"), res.getString("slug"),
@@ -47,22 +47,25 @@ public class ThreadService {
         template.update("UPDATE forums SET threads = threads + 1 WHERE LOWER(SLUG) = LOWER(?)", forum);
         final String query = "INSERT INTO threads (author, created, forum, message, slug, title, votes) "
                 + "VALUES (?, ?::TIMESTAMPTZ, ?, ?, ?, ?, ?) RETURNING *";
-        return template.queryForObject(query, THREAD_MAP, author, created, forum, message, slug, title, 0);
+        return template.queryForObject(query, THREAD_ROW_MAPPER, author, created, forum, message, slug, title, 0);
     }
 
     //since, наверное, может быть null!!!!!!
     public List<Thread> getForumThreads(String slug, Integer limit, String since, Boolean desc) {
         final StringBuilder query = new StringBuilder();
-        query.append("SELECT t.id, t.author, t.created, t.forum, t.message, t.slug, t.title, t.votes ")
-                .append("WHERE LOWER(t.forum) = LOWER(?) AND t.created >= '")
-                .append(since)
-                .append("'::TIMESTAMPTZ ORDER BY t.created ");
+        query.append("SELECT * FROM threads WHERE LOWER(t.forum) = LOWER(?) AND t.created >= '")
+                .append(since).append("'::TIMESTAMPTZ ORDER BY t.created ");
         if (desc) {
             query.append("DESC ");
         } else {
             query.append("ASC ");
         }
         query.append("LIMIT ?");
-        return template.query(query.toString(), THREAD_MAP, slug, limit);
+        return template.query(query.toString(), THREAD_ROW_MAPPER, slug, limit);
+    }
+
+    public Thread getThreadById(Integer id) {
+        final String query = "SELECT * FROM threads t WHERE t.id = ?";
+        return template.queryForObject(query, THREAD_ROW_MAPPER, id);
     }
 }

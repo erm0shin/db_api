@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+@SuppressWarnings({"SqlDialectInspection", "SqlNoDataSourceInspection"})
 @Service
 @Transactional
 public class UserService {
@@ -33,15 +34,14 @@ public class UserService {
 //            forum_id    BIGINT    --REFERENCES forums (id)
 //);
 
-    private static final RowMapper<User> USER_MAP = (res, num) -> new User(res.getLong("id"),
+    private static final RowMapper<User> USER_ROW_MAPPER = (res, num) -> new User(res.getLong("id"),
             res.getString("email"), res.getString("fullname"),
             res.getString("nickname"), res.getString("about"));
 
 
-    public List<User> findForumMembers(String slug, Integer limit, String since, Boolean desc) {
+    public List<User> getForumMembers(String slug, Integer limit, String since, Boolean desc) {
         final StringBuilder query = new StringBuilder();
-        query.append("SELECT u.id, u.email, u.fullname, u.nickname, u.about ")
-                .append("FROM users u JOIN forum_members fm ON(u.id = fm.user_id) ")
+        query.append("SELECT * FROM users u JOIN forum_members fm ON(u.id = fm.user_id) ")
                 .append("WHERE fm.forum_id = ? ")
                 .append("AND LOWER(u.nickname) > LOWER('").append(since).append("') ")
                 .append("ORDER BY LOWER(u.nickname) ");
@@ -51,6 +51,11 @@ public class UserService {
             query.append("ASC ");
         }
         query.append("LIMIT ?");
-        return template.query(query.toString(), USER_MAP, slug, limit);
+        return template.query(query.toString(), USER_ROW_MAPPER, slug, limit);
+    }
+
+    public User getUserByNickname(String nickname) {
+        final String query = "SELECT * FROM users u WHERE LOWER(u.nickname) = LOWER(?)";
+        return template.queryForObject(query, USER_ROW_MAPPER, nickname);
     }
 }

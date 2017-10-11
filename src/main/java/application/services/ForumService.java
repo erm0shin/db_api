@@ -18,7 +18,7 @@ public class ForumService {
         this.template = template;
     }
 
-    private static final RowMapper<Forum> FORUM_MAP = (res, num) -> new Forum(res.getLong("id"),
+    private static final RowMapper<Forum> FORUM_ROW_MAPPER = (res, num) -> new Forum(res.getLong("id"),
             res.getLong("posts"), res.getString("slug"), res.getInt("threads"),
             res.getString("title"), res.getString("\"user\""));
 
@@ -34,13 +34,12 @@ public class ForumService {
     public Forum createForum(String slug, String title, String user) {
         final String query = "INSERT INTO forums (posts, slug, threads, title, \"user\", ) "
                 + "VALUES (?, ?, ?, ?, ?) RETURNING *";
-        return template.queryForObject(query, FORUM_MAP, 0, slug, 0, title, user);
+        return template.queryForObject(query, FORUM_ROW_MAPPER, 0, slug, 0, title, user);
     }
 
     public Forum getForumDetails(String slug) {
-        final String query = "SELECT f.id, f.posts, f.slug, f.threads, f.title, f.\"user\" "
-                + "FROM forums f WHERE LOWER(f.slug) = LOWER(?)";
-        return template.queryForObject(query, FORUM_MAP, slug);
+        final String query = "SELECT * FROM forums f WHERE LOWER(f.slug) = LOWER(?)";
+        return template.queryForObject(query, FORUM_ROW_MAPPER, slug);
     }
 
 }

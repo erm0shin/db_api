@@ -12,7 +12,7 @@ DROP TABLE IF EXISTS votes CASCADE;
 DROP TABLE IF EXISTS forum_members CASCADE;
 
 
-CREATE TABLE IF NOT EXISTS users (
+CREATE TABLE users (
   id        BIGSERIAL  PRIMARY KEY,
   email     TEXT       NOT NULL,
   fullname  TEXT       NOT NULL,
@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 
-CREATE TABLE IF NOT EXISTS forums (
+CREATE TABLE forums (
   id        BIGSERIAL   PRIMARY KEY,
   posts     BIGINT,
   slug      TEXT        NOT NULL,
@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS forums (
 );
 
 
-CREATE TABLE IF NOT EXISTS threads (
+CREATE TABLE threads (
   id        SERIAL     PRIMARY KEY,
   author    TEXT          NOT NULL,
   created   TIMESTAMPTZ,
@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS threads (
 );
 
 
-CREATE TABLE IF NOT EXISTS posts (
+CREATE TABLE posts (
   id          BIGSERIAL     PRIMARY KEY,
   author      TEXT          NOT NULL,
   created     TIMESTAMPTZ   NOT NULL,
@@ -51,19 +51,18 @@ CREATE TABLE IF NOT EXISTS posts (
   isEdited    BOOLEAN       DEFAULT FALSE,
   message     TEXT          NOT NULL,
   parent      BIGINT,
---   path        BIGINT []     NOT NULL,
-  thread_id   INT           NOT NULL --REFERENCES threads (id)
+  thread_id   INT           NOT NULL
 );
 
 
-CREATE TABLE IF NOT EXISTS votes (
-  user_id     BIGINT    NOT NULL, --REFERENCES users (id),
-  thread_id   INT       NOT NULL, --REFERENCES threads (id),
+CREATE TABLE votes (
+  user_id     BIGINT    NOT NULL,
+  thread_id   INT       NOT NULL,
   voice       INT       NOT NULL
 );
 
 
--- CREATE TABLE IF NOT EXISTS forum_members (
---   user_id     BIGINT    REFERENCES users (id),
---   forum_id    BIGINT    REFERENCES forums (id)
--- );
+CREATE TABLE forum_members (
+  user_id     BIGINT,
+  forum_id    BIGINT
+);

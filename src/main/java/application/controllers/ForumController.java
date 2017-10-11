@@ -73,7 +73,7 @@ public class ForumController {
                                         @RequestParam(value = "since") String since,
                                         @RequestParam(value = "desc") Boolean desc) {
         //Сделать проверку на существование форума в системе
-        final List<User> users = userService.findForumMembers(slug, limit, since, desc);
+        final List<User> users = userService.getForumMembers(slug, limit, since, desc);
         return ResponseEntity.status(HttpStatus.OK).body(users);
     }
 
