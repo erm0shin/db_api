@@ -58,4 +58,21 @@ public class UserService {
         final String query = "SELECT * FROM users u WHERE LOWER(u.nickname) = LOWER(?)";
         return template.queryForObject(query, USER_ROW_MAPPER, nickname);
     }
+
+    public User createUser(String email, String fullname, String nickname, String about) {
+        final String query = "INSERT INTO users (email, fullname, nickname, about) "
+                + "VALUES (?, ?, ?, ?) RETURNING *";
+        return template.queryForObject(query, USER_ROW_MAPPER, email, fullname, nickname, about);
+    }
+
+    public List<User> getUsersByNicknameOrEmail(String nickname, String email) {
+        final String query = "SELECT * FROM users u WHERE LOWER(u.nickname) = LOWER(?) OR LOWER(u.email) = LOWER(?)";
+        return template.query(query, USER_ROW_MAPPER, nickname, email);
+    }
+
+    public User updateProfile(String email, String fullname, String nickname, String about) {
+        final String query = "UPDATE users u SET u.email = ?, u.fullname = ?, u.about = ? "
+                + "WHERE LOWER(u.nickname) = LOWER(?) RETURNING *";
+        return template.queryForObject(query, USER_ROW_MAPPER, email, fullname, about, nickname);
+    }
 }
