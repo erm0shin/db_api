@@ -9,8 +9,8 @@ import application.services.UserService;
 import application.utils.requests.CreateForumRequest;
 import application.utils.requests.CreateThreadRequest;
 import application.utils.responses.BadResponse;
-import application.utils.responses.ForumResponse;
-import application.utils.responses.ThreadResponse;
+//import application.utils.responses.ForumResponse;
+//import application.utils.responses.ThreadResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -41,11 +41,13 @@ public class ForumController {
         try {
             final User user = userService.getUserByNickname(request.getUser());
             final Forum forum = forumService.createForum(request.getSlug(), request.getTitle(), request.getUser());
-            return ResponseEntity.status(HttpStatus.CREATED).body(new ForumResponse(forum));
+//            return ResponseEntity.status(HttpStatus.CREATED).body(new ForumResponse(forum)forum);
+            return ResponseEntity.status(HttpStatus.CREATED).body(forum);
         } catch (EmptyResultDataAccessException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new BadResponse("Can't find such user"));
         } catch (DuplicateKeyException e) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(new ForumResponse(forumService.getForumDetails(request.getSlug())));
+//            return ResponseEntity.status(HttpStatus.CONFLICT).body(new ForumResponse(forumService.getForumDetails(request.getSlug())));
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(forumService.getForumDetails(request.getSlug()));
         }
     }
 
@@ -57,11 +59,13 @@ public class ForumController {
             final Forum forum = forumService.getForumDetails(slug);
             final application.models.Thread thread = threadService.createThread(request.getAuthor(), request.getCreated(),
                     request.getMessage(), request.getTitle(), request.getSlug(), slug);
-            return ResponseEntity.status(HttpStatus.CREATED).body(new ThreadResponse(thread));
+//            return ResponseEntity.status(HttpStatus.CREATED).body(new ThreadResponse(thread));
+            return ResponseEntity.status(HttpStatus.CREATED).body(thread);
         } catch (EmptyResultDataAccessException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new BadResponse("Can't find such user or forum"));
         } catch (DuplicateKeyException e) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(new ThreadResponse(threadService.getThreadBySlug(request.getSlug())));
+//            return ResponseEntity.status(HttpStatus.CONFLICT).body(new ThreadResponse(threadService.getThreadBySlug(request.getSlug())));
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(threadService.getThreadBySlug(request.getSlug()));
         }
     }
 
@@ -69,7 +73,8 @@ public class ForumController {
     public ResponseEntity getForumDetails(@PathVariable String slug) {
         try {
             final Forum forum = forumService.getForumDetails(slug);
-            return ResponseEntity.status(HttpStatus.OK).body(new ForumResponse(forum));
+//            return ResponseEntity.status(HttpStatus.OK).body(new ForumResponse(forum));
+            return ResponseEntity.status(HttpStatus.OK).body(forum);
         } catch (EmptyResultDataAccessException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new BadResponse("Can't find such forum"));
         }

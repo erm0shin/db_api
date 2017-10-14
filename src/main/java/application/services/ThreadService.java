@@ -1,7 +1,10 @@
 package application.services;
 
 import application.models.Thread;
+import application.models.User;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DuplicateKeyException;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
@@ -72,5 +75,52 @@ public class ThreadService {
     public Thread getThreadBySlug(String slug) {
         final String query = "SELECT * FROM threads t WHERE LOWER(t.slug) = LOWER(?)";
         return template.queryForObject(query, THREAD_ROW_MAPPER, slug);
+    }
+
+    public Thread getThreadBySlugOrId(String slugOrId) {
+        try {
+            return this.getThreadById(Integer.parseInt(slugOrId));
+        } catch (EmptyResultDataAccessException e) {
+            return this.getThreadBySlug(slugOrId);
+        }
+    }
+
+    public Thread updateThreadDetails(String slugOrId, String message, String title) {
+        final Thread thread = this.getThreadBySlugOrId(slugOrId);
+        final String query = "UPDATE threads SET message = ?, title = ? WHERE id = ? RETURNING *";
+        return template.queryForObject(query, THREAD_ROW_MAPPER, message, title, thread.getId());
+    }
+
+//    public ThreadModel addVote(Vote voteInfo, ThreadModel thread) {
+//        template.update("INSERT INTO votes (user_id, thread_id, voice) VALUES " +
+//                        "((SELECT u.id FROM users u WHERE lower(nickname) = lower(?)), ?, ?) " +
+//                        "ON CONFLICT (user_id, thread_id) DO " +
+//                        " UPDATE SET voice = ?",
+//                voteInfo.getNickname(), thread.getId(), voteInfo.getVoice(), voteInfo.getVoice()
+//        );
+//
+//        thread.setVotes(template.queryForObject("SELECT t.votes FROM threads t " +
+//                "WHERE t.id = ?", Integer.class, thread.getId()));
+//
+//        return thread;
+//    }
+
+    @SuppressWarnings("ConstantConditions")
+    public Thread voteThread(String slugOrId, Long userId, Integer voice) {
+        final Thread thread = this.getThreadBySlugOrId(slugOrId);
+        final String threadQuery = "UPDATE threads SET votes = votes + ? WHERE id = ? RETURNING *";
+        try {
+            final String votesQuery = "INSERT INTO votes (user_id, thread_id, voice) VALUES (?, ?, ?)";
+            template.update(votesQuery, userId, thread.getId(), voice);
+            thread.setVotes(template.queryForObject(threadQuery, THREAD_ROW_MAPPER, voice, thread.getId()).getVotes());
+        } catch (DuplicateKeyException e) {
+
+            //можно учесть, что может прийти оценка такая же, как и прежде!!!!!!!!!!!!!!!!
+
+            final String votesQuery = "UPDATE votes SET voice = ? WHERE user_id = ? AND thread_id = ?";
+            template.update(votesQuery, voice, userId, thread.getId());
+            thread.setVotes(template.queryForObject(threadQuery, THREAD_ROW_MAPPER, (voice == 1 ? 2 : -2), thread.getId()).getVotes());
+        }
+        return thread;
     }
 }

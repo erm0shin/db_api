@@ -1,8 +1,12 @@
 package application.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 @SuppressWarnings("unused")
 public class Forum {
+    @JsonIgnore
     private Long id;
+
     private Long posts;
     private String slug;
     private Integer threads;

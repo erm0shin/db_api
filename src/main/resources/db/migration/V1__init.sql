@@ -45,20 +45,20 @@ CREATE TABLE threads (
 
 CREATE TABLE posts (
   id          BIGSERIAL     PRIMARY KEY,
-  author      TEXT          NOT NULL UNIQUE,
+  author      TEXT          NOT NULL,
   created     TIMESTAMPTZ,
-  forum       TEXT          UNIQUE,
+  forum       TEXT,
   isEdited    BOOLEAN       NOT NULL DEFAULT FALSE,
   message     TEXT          NOT NULL,
   parent      BIGINT,
   thread_id   INT           NOT NULL
 );
 
---Стоит вопрос об уникальности!!!
 CREATE TABLE votes (
   user_id     BIGINT    NOT NULL,
   thread_id   INT       NOT NULL,
-  voice       INT       NOT NULL
+  voice       INT       NOT NULL,
+  UNIQUE (user_id, thread_id)
 );
 
 

@@ -1,8 +1,12 @@
 package application.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 @SuppressWarnings("unused")
 public class User {
+    @JsonIgnore
     private Long id;
+
     private String email;
     private String fullname;
     private String nickname;
