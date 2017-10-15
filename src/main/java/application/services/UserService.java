@@ -71,8 +71,8 @@ public class UserService {
     }
 
     public User updateProfile(String email, String fullname, String nickname, String about) {
-        final String query = "UPDATE users u SET u.email = ?, u.fullname = ?, u.about = ? "
-                + "WHERE LOWER(u.nickname) = LOWER(?) RETURNING *";
+        final String query = "UPDATE users SET email = COALESCE(?, email), fullname = COALESCE(?, fullname), about = COALESCE(?, about) "
+                + "WHERE LOWER(nickname) = LOWER(?) RETURNING *";
         return template.queryForObject(query, USER_ROW_MAPPER, email, fullname, about, nickname);
     }
 }

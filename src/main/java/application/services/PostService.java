@@ -2,6 +2,7 @@ package application.services;
 
 import application.models.Post;
 import application.models.Thread;
+import application.utils.requests.CreatePostRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -57,22 +58,42 @@ public class PostService {
     }
 
     @SuppressWarnings({"unused", "ThrowInsideCatchBlockWhichIgnoresCaughtException"})
-    public List<Post> createPosts(List<Post> request, Thread thread) {
+    public List<Post> createPosts(List<CreatePostRequest> request, Thread thread) {
+//        if (request.isEmpty()) {
+//            return request;
+//        }
         final String query = "INSERT INTO posts (author, created, forum, isEdited, message, parent, thread_id) "
                 + "VALUES (?, ?::TIMESTAMPTZ, ?, ?, ?, ?, ?) RETURNING *";
         final String created = ZonedDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"));
         final String forum = thread.getForum();
         final List<Post> response = new ArrayList<>();
-        for (final Post post : request) {
-            try {
-                final Post parentPost = this.getPostById(post.getParent());
-            } catch (EmptyResultDataAccessException e) {
-                throw new NoSuchElementException("Any parentpost field missed");
+        for (final CreatePostRequest post : request) {
+            if (post.getParent() != null && post.getParent() != 0) {
+                try {
+                    final Post parentPost = this.getPostById(post.getParent());
+//                if (post.getParent() != null && !Objects.equals(this.getThreadIdById(post.getParent()), post.getThread()))
+                } catch (EmptyResultDataAccessException e) {
+                    throw new NoSuchElementException("Any parentpost field missed");
+                }
+            } else {
+                post.setParent(0L);
             }
+//            try {
+//                if (post.getParent() != null && !Objects.equals(this.getThreadIdById(post.getParent()), post.getThread())) {
+//                    throw new DataIntegrityViolationException("thread exception");
+//                }
+//            } catch (EmptyResultDataAccessException e) {
+//                throw new DataIntegrityViolationException(e.getMessage());
+//            }
             response.add(template.queryForObject(query, POST_ROW_MAPPER, post.getAuthor(), created, forum,
                     false, post.getMessage(), post.getParent(), thread.getId()));
+//            INSERT INTO forum_members (user_id, forum_id) VALUES ((SELECT id FROM users WHERE lower(NEW.author) = lower(nickname)),
+//                    (SELECT id FROM forums WHERE lower(NEW.forum) = lower(slug)));
+            final String forumMembersQuery = "INSERT INTO forum_members (user_id, forum_id) VALUES "
+                    + " ((SELECT id FROM users WHERE LOWER(nickname) = LOWER(?)), (SELECT id FROM forums WHERE LOWER(slug) = LOWER(?)))";
+            template.update(forumMembersQuery, post.getAuthor(), forum);
         }
-        template.update("UPDATE forums f SET f.posts = f.posts + ? WHERE LOWER(f.slug) = LOWER(?)", request.size(), forum);
+        template.update("UPDATE forums SET posts = posts + ? WHERE LOWER(slug) = LOWER(?)", request.size(), forum);
         return response;
     }
 }

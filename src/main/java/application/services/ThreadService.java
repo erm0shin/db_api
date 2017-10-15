@@ -1,9 +1,8 @@
 package application.services;
 
 import application.models.Thread;
-import application.models.User;
+import application.models.Vote;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DuplicateKeyException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -14,6 +13,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Objects;
 
 @SuppressWarnings({"SqlDialectInspection", "SqlNoDataSourceInspection"})
 @Service
@@ -30,6 +30,13 @@ public class ThreadService {
 //            votes     INT
 //    );
 
+
+//    CREATE TABLE votes (
+//            user_id     BIGINT    NOT NULL,
+//            thread_id   INT       NOT NULL,
+//            voice       INT       NOT NULL
+//    );
+
     private JdbcTemplate template;
 
     @Autowired
@@ -42,26 +49,38 @@ public class ThreadService {
     private static final RowMapper<Thread> THREAD_ROW_MAPPER = (res, num) -> new Thread(res.getInt("id"),
             res.getString("author"), LocalDateTime.ofInstant(res.getTimestamp("created").toInstant(),
             ZoneOffset.ofHours(0)).format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")),
-            res.getString("forum"), res.getString("mesage"), res.getString("slug"),
+            res.getString("forum"), res.getString("message"), res.getString("slug"),
             res.getString("title"), res.getInt("votes"));
+
+    private static final RowMapper<Vote> VOTE_ROW_MAPPER = (res, num) -> new Vote(res.getLong("user_id"),
+            res.getInt("thread_id"), res.getInt("voice"));
 
     public Thread createThread(String author, String created, String message,
                                String title, String slug, String forum) {
-        template.update("UPDATE forums SET threads = threads + 1 WHERE LOWER(SLUG) = LOWER(?)", forum);
         final String query = "INSERT INTO threads (author, created, forum, message, slug, title, votes) "
-                + "VALUES (?, ?::TIMESTAMPTZ, ?, ?, ?, ?, ?) RETURNING *";
-        return template.queryForObject(query, THREAD_ROW_MAPPER, author, created, forum, message, slug, title, 0);
+                + "VALUES (?, COALESCE (?::TIMESTAMPTZ, CURRENT_TIMESTAMP ), ?, ?, ?, ?, ?) RETURNING *";
+        final Thread thread = template.queryForObject(query, THREAD_ROW_MAPPER, author, created, forum, message, slug, title, 0);
+        template.update("UPDATE forums SET threads = threads + 1 WHERE LOWER(slug) = LOWER(?)", forum);
+        return thread;
     }
 
-    //since, наверное, может быть null!!!!!!
     public List<Thread> getForumThreads(String slug, Integer limit, String since, Boolean desc) {
+        if (desc == null) {
+            desc = false;
+        }
         final StringBuilder query = new StringBuilder();
-        query.append("SELECT * FROM threads WHERE LOWER(t.forum) = LOWER(?) AND t.created >= '")
-                .append(since).append("'::TIMESTAMPTZ ORDER BY t.created ");
+        query.append("SELECT * FROM threads t WHERE LOWER(t.forum) = LOWER(?) ");
+        if (since != null) {
+            if (desc) {
+                query.append("AND t.created <= '").append(since).append("'::TIMESTAMPTZ ");
+            } else {
+                query.append("AND t.created >= '").append(since).append("'::TIMESTAMPTZ ");
+            }
+        }
         if (desc) {
-            query.append("DESC ");
+            query.append("ORDER BY t.created DESC ");
         } else {
-            query.append("ASC ");
+            query.append("ORDER BY t.created ASC ");
         }
         query.append("LIMIT ?");
         return template.query(query.toString(), THREAD_ROW_MAPPER, slug, limit);
@@ -79,9 +98,9 @@ public class ThreadService {
 
     public Thread getThreadBySlugOrId(String slugOrId) {
         try {
-            return this.getThreadById(Integer.parseInt(slugOrId));
-        } catch (EmptyResultDataAccessException e) {
             return this.getThreadBySlug(slugOrId);
+        } catch (EmptyResultDataAccessException e) {
+            return this.getThreadById(Integer.valueOf(slugOrId));
         }
     }
 
@@ -91,35 +110,25 @@ public class ThreadService {
         return template.queryForObject(query, THREAD_ROW_MAPPER, message, title, thread.getId());
     }
 
-//    public ThreadModel addVote(Vote voteInfo, ThreadModel thread) {
-//        template.update("INSERT INTO votes (user_id, thread_id, voice) VALUES " +
-//                        "((SELECT u.id FROM users u WHERE lower(nickname) = lower(?)), ?, ?) " +
-//                        "ON CONFLICT (user_id, thread_id) DO " +
-//                        " UPDATE SET voice = ?",
-//                voteInfo.getNickname(), thread.getId(), voteInfo.getVoice(), voteInfo.getVoice()
-//        );
-//
-//        thread.setVotes(template.queryForObject("SELECT t.votes FROM threads t " +
-//                "WHERE t.id = ?", Integer.class, thread.getId()));
-//
-//        return thread;
-//    }
-
     @SuppressWarnings("ConstantConditions")
     public Thread voteThread(String slugOrId, Long userId, Integer voice) {
         final Thread thread = this.getThreadBySlugOrId(slugOrId);
         final String threadQuery = "UPDATE threads SET votes = votes + ? WHERE id = ? RETURNING *";
+
         try {
-            final String votesQuery = "INSERT INTO votes (user_id, thread_id, voice) VALUES (?, ?, ?)";
-            template.update(votesQuery, userId, thread.getId(), voice);
-            thread.setVotes(template.queryForObject(threadQuery, THREAD_ROW_MAPPER, voice, thread.getId()).getVotes());
-        } catch (DuplicateKeyException e) {
+            final String lastVoteQuery = "SELECT * FROM votes WHERE user_id = ? AND thread_id = ?";
+            final Vote lastVote = template.queryForObject(lastVoteQuery, VOTE_ROW_MAPPER, userId, thread.getId());
 
-            //можно учесть, что может прийти оценка такая же, как и прежде!!!!!!!!!!!!!!!!
-
+            if (Objects.equals(lastVote.getVoice(), voice)) {
+                return thread;
+            }
             final String votesQuery = "UPDATE votes SET voice = ? WHERE user_id = ? AND thread_id = ?";
             template.update(votesQuery, voice, userId, thread.getId());
             thread.setVotes(template.queryForObject(threadQuery, THREAD_ROW_MAPPER, (voice == 1 ? 2 : -2), thread.getId()).getVotes());
+        } catch (EmptyResultDataAccessException e) {
+            final String votesQuery = "INSERT INTO votes (user_id, thread_id, voice) VALUES (?, ?, ?)";
+            template.update(votesQuery, userId, thread.getId(), voice);
+            thread.setVotes(template.queryForObject(threadQuery, THREAD_ROW_MAPPER, voice, thread.getId()).getVotes());
         }
         return thread;
     }

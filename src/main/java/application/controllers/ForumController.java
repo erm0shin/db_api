@@ -39,8 +39,9 @@ public class ForumController {
     @PostMapping(path = "/create")
     public ResponseEntity createForum(@RequestBody CreateForumRequest request) {
         try {
-            final User user = userService.getUserByNickname(request.getUser());
-            final Forum forum = forumService.createForum(request.getSlug(), request.getTitle(), request.getUser());
+//            final User user = userService.getUserByNickname(request.getUser());
+            final String nickname = userService.getUserByNickname(request.getUser()).getNickname();
+            final Forum forum = forumService.createForum(request.getSlug(), request.getTitle(), /*request.getUser()*/nickname);
 //            return ResponseEntity.status(HttpStatus.CREATED).body(new ForumResponse(forum)forum);
             return ResponseEntity.status(HttpStatus.CREATED).body(forum);
         } catch (EmptyResultDataAccessException e) {
@@ -57,8 +58,8 @@ public class ForumController {
         try {
             final User user = userService.getUserByNickname(request.getAuthor());
             final Forum forum = forumService.getForumDetails(slug);
-            final application.models.Thread thread = threadService.createThread(request.getAuthor(), request.getCreated(),
-                    request.getMessage(), request.getTitle(), request.getSlug(), slug);
+            final Thread thread = threadService.createThread(request.getAuthor(), request.getCreated(),
+                    request.getMessage(), request.getTitle(), request.getSlug(), forum.getSlug());
 //            return ResponseEntity.status(HttpStatus.CREATED).body(new ThreadResponse(thread));
             return ResponseEntity.status(HttpStatus.CREATED).body(thread);
         } catch (EmptyResultDataAccessException e) {
@@ -82,9 +83,9 @@ public class ForumController {
 
     @GetMapping(path = "{slug}/threads")
     public ResponseEntity getForumThreads(@PathVariable String slug,
-                                          @RequestParam(value = "limit") Integer limit,
-                                          @RequestParam(value = "since") String since,
-                                          @RequestParam(value = "desc") Boolean desc) {
+                                          @RequestParam(value = "limit", required = false) Integer limit,
+                                          @RequestParam(value = "since", required = false) String since,
+                                          @RequestParam(value = "desc", required = false) Boolean desc) {
         try {
             final Forum forum = forumService.getForumDetails(slug);
         } catch (EmptyResultDataAccessException e) {

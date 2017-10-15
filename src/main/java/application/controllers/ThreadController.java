@@ -6,6 +6,7 @@ import application.models.User;
 import application.services.PostService;
 import application.services.ThreadService;
 import application.services.UserService;
+import application.utils.requests.CreatePostRequest;
 import application.utils.requests.UpdateThreadRequest;
 import application.utils.requests.VoteRequest;
 import application.utils.responses.BadResponse;
@@ -34,12 +35,16 @@ public class ThreadController {
         this.userService = userService;
     }
 
+//    @PostMapping(path = "/{slug}/create")
+//    public ResponseEntity createThread(@PathVariable String slug,
+//                                       @RequestBody CreateThreadRequest request) {
+
     @PostMapping(path = "/{slug_or_id}/create")
     public ResponseEntity createPosts(@PathVariable String slug_or_id,
-                                      @RequestBody List<Post> request) {
+                                      @RequestBody List<CreatePostRequest> request) {
         try {
             final Thread thread = threadService.getThreadBySlugOrId(slug_or_id);
-            return ResponseEntity.status(HttpStatus.OK).body(postService.createPosts(request, thread));
+            return ResponseEntity.status(HttpStatus.CREATED).body(postService.createPosts(request, thread));
         } catch (EmptyResultDataAccessException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new BadResponse("Can't find such thread"));
         } catch (NoSuchElementException e) {
