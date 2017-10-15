@@ -2,7 +2,9 @@ package application.services;
 
 import application.models.Post;
 import application.models.Thread;
+import application.models.User;
 import application.utils.requests.CreatePostRequest;
+import javafx.geometry.Pos;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -14,10 +16,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.*;
 
 @SuppressWarnings({"SqlDialectInspection", "SqlNoDataSourceInspection"})
 @Service
@@ -25,10 +24,12 @@ import java.util.NoSuchElementException;
 public class PostService {
 
     private JdbcTemplate template;
+    private UserService userService;
 
     @Autowired
-    public PostService(JdbcTemplate template) {
+    public PostService(JdbcTemplate template, UserService userService) {
         this.template = template;
+        this.userService = userService;
     }
 
 //    CREATE TABLE posts (
@@ -43,7 +44,7 @@ public class PostService {
 //            path        BIGINT []
 //    );
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings("ArraysAsListWithZeroOrOneArgument")
     private static final RowMapper<Post> POST_ROW_MAPPER = (res, num) -> new Post(res.getLong("id"),
             res.getString("author"), LocalDateTime.ofInstant(res.getTimestamp("created").toInstant(),
             ZoneOffset.ofHours(0)).format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")),
@@ -56,7 +57,11 @@ public class PostService {
     }
 
     public Post updatePostMessage(Long id, String message) {
-        final String query = "UPDATE posts p SET p.isEdited = ?, p.message = ? WHERE p.id = ? RETURNING *";
+        final Post oldPost = this.getPostById(id);
+        if (message == null || oldPost.getMessage().equals(message)) {
+            return oldPost;
+        }
+        final String query = "UPDATE posts SET isEdited = ?, message = COALESCE(?, message) WHERE id = ? RETURNING *";
         return template.queryForObject(query, POST_ROW_MAPPER, true, message, id);
     }
 
@@ -113,16 +118,23 @@ public class PostService {
         for (final CreatePostRequest post : request) {
             final Long newId = template.queryForObject("SELECT nextval('posts_id_seq')", Long.class);
 //            post.setId(template.queryForObject("SELECT nextval('posts_id_seq')", Long.class));
+
             if (post.getParent() != null && post.getParent() != 0) {
                 try {
-                    final Post parentPost = this.getPostById(post.getParent());
+//                    final Post parentPost = this.getPostById(post.getParent());
+                    final Integer parentPostThread = template.queryForObject("SELECT p.thread_id FROM posts p WHERE p.id = ?",
+                            Integer.class, post.getParent());
+                    if (!Objects.equals(parentPostThread, thread.getId())) {
+                        throw new NoSuchElementException("Parent post was created in another thread");
+                    }
                 } catch (EmptyResultDataAccessException e) {
                     throw new NoSuchElementException("Any parentpost field missed");
                 }
             } else {
                 post.setParent(0L);
             }
-            response.add(template.queryForObject(query, POST_ROW_MAPPER, newId, post.getAuthor(), created, forum,
+            response.add(template.queryForObject(query, POST_ROW_MAPPER, newId, /*post.getAuthor()*/
+                    userService.getUserByNickname(post.getAuthor()).getNickname(), created, forum,
                     false, post.getMessage(), post.getParent(), thread.getId(), post.getParent(), newId));
             final String forumMembersQuery = "INSERT INTO forum_members (user_id, forum_id) VALUES "
                     + " ((SELECT id FROM users WHERE LOWER(nickname) = LOWER(?)), (SELECT id FROM forums WHERE LOWER(slug) = LOWER(?)))";

@@ -61,6 +61,13 @@ public class ThreadService {
                 + "VALUES (?, COALESCE (?::TIMESTAMPTZ, CURRENT_TIMESTAMP ), ?, ?, ?, ?, ?) RETURNING *";
         final Thread thread = template.queryForObject(query, THREAD_ROW_MAPPER, author, created, forum, message, slug, title, 0);
         template.update("UPDATE forums SET threads = threads + 1 WHERE LOWER(slug) = LOWER(?)", forum);
+
+
+        final String forumMembersQuery = "INSERT INTO forum_members (user_id, forum_id) VALUES "
+                + " ((SELECT id FROM users WHERE LOWER(nickname) = LOWER(?)), (SELECT id FROM forums WHERE LOWER(slug) = LOWER(?)))";
+        template.update(forumMembersQuery,author, forum);
+
+
         return thread;
     }
 
@@ -106,7 +113,7 @@ public class ThreadService {
 
     public Thread updateThreadDetails(String slugOrId, String message, String title) {
         final Thread thread = this.getThreadBySlugOrId(slugOrId);
-        final String query = "UPDATE threads SET message = ?, title = ? WHERE id = ? RETURNING *";
+        final String query = "UPDATE threads SET message = COALESCE(?, message), title = COALESCE(?, title) WHERE id = ? RETURNING *";
         return template.queryForObject(query, THREAD_ROW_MAPPER, message, title, thread.getId());
     }
 

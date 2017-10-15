@@ -63,11 +63,11 @@ public class Post {
         this.forum = forum;
     }
 
-    public Boolean getEdited() {
+    public Boolean getIsEdited() {
         return isEdited;
     }
 
-    public void setEdited(Boolean edited) {
+    public void setIsEdited(Boolean edited) {
         isEdited = edited;
     }
 

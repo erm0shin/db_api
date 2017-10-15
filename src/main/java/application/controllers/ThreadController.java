@@ -2,7 +2,6 @@ package application.controllers;
 
 import application.models.Post;
 import application.models.Thread;
-import application.models.User;
 import application.services.PostService;
 import application.services.ThreadService;
 import application.services.UserService;
@@ -36,17 +35,13 @@ public class ThreadController {
         this.userService = userService;
     }
 
-//    @PostMapping(path = "/{slug}/create")
-//    public ResponseEntity createThread(@PathVariable String slug,
-//                                       @RequestBody CreateThreadRequest request) {
-
     @PostMapping(path = "/{slug_or_id}/create")
     public ResponseEntity createPosts(@PathVariable String slug_or_id,
                                       @RequestBody List<CreatePostRequest> request) {
         try {
             final Thread thread = threadService.getThreadBySlugOrId(slug_or_id);
             return ResponseEntity.status(HttpStatus.CREATED).body(postService.createPosts(request, thread));
-        } catch (EmptyResultDataAccessException e) {
+        } catch (EmptyResultDataAccessException | NumberFormatException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new BadResponse("Can't find such thread"));
         } catch (NoSuchElementException e) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(new BadResponse(e.getMessage()));
@@ -57,7 +52,7 @@ public class ThreadController {
     public ResponseEntity getPostDetails(@PathVariable String slug_or_id) {
         try {
             return ResponseEntity.status(HttpStatus.OK).body(threadService.getThreadBySlugOrId(slug_or_id));
-        } catch (EmptyResultDataAccessException e) {
+        } catch (EmptyResultDataAccessException | NumberFormatException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new BadResponse("Can't find such thread"));
         }
     }
@@ -67,7 +62,7 @@ public class ThreadController {
                                             @RequestBody UpdateThreadRequest request) {
         try {
             return ResponseEntity.status(HttpStatus.OK).body(threadService.updateThreadDetails(slug_or_id, request.getMessage(), request.getTitle()));
-        } catch (EmptyResultDataAccessException e) {
+        } catch (EmptyResultDataAccessException | NumberFormatException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new BadResponse("Can't find such thread"));
         }
     }
@@ -78,7 +73,7 @@ public class ThreadController {
         try {
             final Long userId = userService.getUserByNickname(request.getNickname()).getId();
             return ResponseEntity.status(HttpStatus.OK).body(threadService.voteThread(slug_or_id, userId, request.getVoice()));
-        } catch (EmptyResultDataAccessException e) {
+        } catch (EmptyResultDataAccessException | NumberFormatException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new BadResponse("Can't find such thread"));
         }
     }
@@ -92,7 +87,7 @@ public class ThreadController {
         final Integer threadId;
         try {
             threadId = threadService.getThreadBySlugOrId(slug_or_id).getId();
-        } catch (EmptyResultDataAccessException e) {
+        } catch (EmptyResultDataAccessException | NumberFormatException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new BadResponse("Can't find such thread"));
         }
         List<Post> posts = null;

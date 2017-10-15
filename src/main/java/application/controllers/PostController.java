@@ -36,7 +36,7 @@ public class PostController {
 
     @GetMapping(path = "/{id}/details")
     public ResponseEntity getPostDetails(@PathVariable Long id,
-                                         @RequestParam(value = "related") List<String> related) {
+                                         @RequestParam(value = "related", required = false) List<String> related) {
         try {
             final SuccessPostDetailsResponse response = new SuccessPostDetailsResponse();
             final Post post = postService.getPostById(id);
@@ -45,7 +45,7 @@ public class PostController {
                 if (related.contains("user")) {
                     response.setAuthor(userService.getUserByNickname(post.getAuthor()));
                 }
-                if (related.contains("post")) {
+                if (related.contains("forum")) {
                     response.setForum(forumService.getForumDetails(post.getForum()));
                 }
                 if (related.contains("thread")) {
