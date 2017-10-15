@@ -5,7 +5,7 @@ MAINTAINER d.ermoshin
 RUN apt-get -y update
 
 ENV PGVER 9.5
-RUN apt-get install -y postgresql-$PGVER && apt-get clean all
+RUN apt-get install -y postgresql-$PGVER
 
 USER postgres
 
@@ -25,8 +25,8 @@ VOLUME  ["/etc/postgresql", "/var/log/postgresql", "/var/lib/postgresql"]
 
 USER root
 
-RUN apt-get install -y openjdk-8-jdk-headless && apt-get clean all
-RUN apt-get install -y maven && apt-get clean all
+RUN apt-get install -y openjdk-8-jdk-headless
+RUN apt-get install -y maven
 
 ENV APP /root/app
 ADD ./ $APP
@@ -36,4 +36,4 @@ RUN mvn package
 
 EXPOSE 5000
 
-CMD service postgresql start && java -Xmx300M -Xmx300M -jar $APP/target/db_api.jar
+CMD service postgresql start && java -Xmx300M -Xmx300M -jar $APP/target/db-api-1.0-SNAPSHOT.jar
