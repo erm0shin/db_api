@@ -61,7 +61,8 @@ CREATE TABLE posts (
   isEdited    BOOLEAN       NOT NULL DEFAULT FALSE,
   message     TEXT          NOT NULL,
   parent      BIGINT,
-  thread_id   INT           NOT NULL
+  thread_id   INT           NOT NULL,
+  path        BIGINT []
 );
 
 CREATE TABLE votes (

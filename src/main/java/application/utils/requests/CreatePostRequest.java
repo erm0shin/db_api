@@ -65,6 +65,10 @@ public class CreatePostRequest {
         return thread;
     }
 
+//    public void setId(Long id) {
+//        this.id = id;
+//    }
+
     public void setParent(Long parent) {
         this.parent = parent;
     }

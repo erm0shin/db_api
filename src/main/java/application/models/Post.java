@@ -1,5 +1,9 @@
 package application.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import java.util.List;
+
 @SuppressWarnings("unused")
 public class Post {
     private Long id;
@@ -11,8 +15,11 @@ public class Post {
     private Long parent;
     private Integer thread;
 
-    public Post(Long id, String author, String created, String forum,
-                Boolean isEdited, String message, Long parent, Integer thread) {
+    @JsonIgnore
+    private List<Long> path;
+
+    public <T> Post(Long id, String author, String created, String forum,
+                Boolean isEdited, String message, Long parent, Integer thread, List<T> path) {
         this.id = id;
         this.author = author;
         this.created = created;
@@ -21,6 +28,7 @@ public class Post {
         this.message = message;
         this.parent = parent;
         this.thread = thread;
+        this.path = (List<Long>)path;
     }
 
     public Long getId() {
@@ -85,5 +93,13 @@ public class Post {
 
     public void setThread(Integer thread) {
         this.thread = thread;
+    }
+
+    public List<Long> getPath() {
+        return path;
+    }
+
+    public void setPath(List<Long> path) {
+        this.path = path;
     }
 }

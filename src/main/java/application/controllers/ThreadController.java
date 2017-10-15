@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 
 @SuppressWarnings("MethodParameterNamingConvention")
 @RestController
@@ -80,5 +81,30 @@ public class ThreadController {
         } catch (EmptyResultDataAccessException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new BadResponse("Can't find such thread"));
         }
+    }
+
+    @GetMapping(path = "/{slug_or_id}/posts")
+    public ResponseEntity getPosts(@PathVariable String slug_or_id,
+                                   @RequestParam(value = "limit") Long limit,
+                                   @RequestParam(value = "since", required = false) Long since,
+                                   @RequestParam(value = "sort", required = false, defaultValue = "flat") String sort,
+                                   @RequestParam(value = "desc", required = false, defaultValue = "false") Boolean desc) {
+        final Integer threadId;
+        try {
+            threadId = threadService.getThreadBySlugOrId(slug_or_id).getId();
+        } catch (EmptyResultDataAccessException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new BadResponse("Can't find such thread"));
+        }
+        List<Post> posts = null;
+        if (Objects.equals(sort, "flat")) {
+            posts = postService.getPostsSortedFlat(threadId, limit, since, desc);
+        }
+        if (Objects.equals(sort, "tree")) {
+            posts = postService.getPostsSortedTree(threadId, limit, since, desc);
+        }
+        if (Objects.equals(sort, "parent_tree")) {
+            posts = postService.getPostsSortedParentTree(threadId, limit, since, desc);
+        }
+        return ResponseEntity.status(HttpStatus.OK).body(posts);
     }
 }
