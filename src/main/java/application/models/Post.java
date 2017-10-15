@@ -18,8 +18,9 @@ public class Post {
     @JsonIgnore
     private List<Long> path;
 
+    @SuppressWarnings("unchecked")
     public <T> Post(Long id, String author, String created, String forum,
-                Boolean isEdited, String message, Long parent, Integer thread, List<T> path) {
+                    Boolean isEdited, String message, Long parent, Integer thread, List<T> path) {
         this.id = id;
         this.author = author;
         this.created = created;

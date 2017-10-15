@@ -23,21 +23,21 @@ public class DBService {
             res.getInt("post"), res.getInt("thread"), res.getInt("user"));
 
     public void clearDB() {
-        final String query = "TRUNCATE TABLE users CASCADE;" +
-                "TRUNCATE TABLE users CASCADE;" +
-                "TRUNCATE TABLE forums CASCADE;" +
-                "TRUNCATE TABLE threads CASCADE;" +
-                "TRUNCATE TABLE posts CASCADE;" +
-                "TRUNCATE TABLE votes CASCADE;" +
-                "TRUNCATE TABLE forum_members CASCADE;";
+        final String query = "TRUNCATE TABLE users CASCADE;"
+                + "TRUNCATE TABLE users CASCADE;"
+                + "TRUNCATE TABLE forums CASCADE;"
+                + "TRUNCATE TABLE threads CASCADE;"
+                + "TRUNCATE TABLE posts CASCADE;"
+                + "TRUNCATE TABLE votes CASCADE;"
+                + "TRUNCATE TABLE forum_members CASCADE;";
         template.update(query);
     }
 
     public DBInfo getDBInfo() {
-        final String query = "SELECT (SELECT COUNT(*) FROM forums) AS forum, " +
-                "(SELECT COUNT(*) FROM posts) AS post, " +
-                "(SELECT COUNT(*) FROM threads) AS thread, " +
-                "(SELECT COUNT(*) FROM users) AS \"user\"";
+        final String query = "SELECT (SELECT COUNT(*) FROM forums) AS forum, "
+                + "(SELECT COUNT(*) FROM posts) AS post, "
+                + "(SELECT COUNT(*) FROM threads) AS thread, "
+                + "(SELECT COUNT(*) FROM users) AS \"user\"";
         return template.queryForObject(query, DB_INFO_ROW_MAPPER);
     }
 }

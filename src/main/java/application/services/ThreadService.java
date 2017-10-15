@@ -19,23 +19,6 @@ import java.util.Objects;
 @Service
 @Transactional
 public class ThreadService {
-//    CREATE TABLE IF NOT EXISTS threads (
-//            id        SERIAL     PRIMARY KEY,
-//            author    TEXT          NOT NULL,
-//            created   TIMESTAMPTZ,
-//            forum     TEXT,
-//            message   TEXT          NOT NULL,
-//            slug      TEXT          UNIQUE,
-//            title     TEXT          NOT NULL,
-//            votes     INT
-//    );
-
-
-//    CREATE TABLE votes (
-//            user_id     BIGINT    NOT NULL,
-//            thread_id   INT       NOT NULL,
-//            voice       INT       NOT NULL
-//    );
 
     private JdbcTemplate template;
 
@@ -43,8 +26,6 @@ public class ThreadService {
     public ThreadService(JdbcTemplate template) {
         this.template = template;
     }
-
-    //Упростить преобразование времени!!!!!!!!
 
     private static final RowMapper<Thread> THREAD_ROW_MAPPER = (res, num) -> new Thread(res.getInt("id"),
             res.getString("author"), LocalDateTime.ofInstant(res.getTimestamp("created").toInstant(),

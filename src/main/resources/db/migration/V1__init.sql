@@ -20,13 +20,6 @@ CREATE TABLE users (
   about     TEXT
 );
 
-CREATE UNIQUE INDEX idx_users_email
-  ON users (LOWER(email));
-
-
-CREATE UNIQUE INDEX idx_users_nickname
-  ON users (LOWER(nickname));
-
 
 CREATE TABLE forums (
   id        BIGSERIAL   PRIMARY KEY,
@@ -49,9 +42,6 @@ CREATE TABLE threads (
   votes     INT
 );
 
-CREATE UNIQUE INDEX idx_threads_slug
-  ON threads (LOWER(slug));
-
 
 CREATE TABLE posts (
   id          BIGSERIAL     PRIMARY KEY,
@@ -65,14 +55,12 @@ CREATE TABLE posts (
   path        BIGINT []
 );
 
+
 CREATE TABLE votes (
   user_id     BIGINT    NOT NULL,
   thread_id   INT       NOT NULL,
   voice       INT       NOT NULL
 );
-
-CREATE UNIQUE INDEX idx_votes_user_thread
-  ON votes (user_id, thread_id);
 
 
 CREATE TABLE forum_members (
