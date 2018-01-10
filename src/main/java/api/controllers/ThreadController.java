@@ -5,7 +5,6 @@ import api.models.Thread;
 import api.services.PostService;
 import api.services.ThreadService;
 import api.services.UserService;
-import api.utils.requests.CreatePostRequest;
 import api.utils.requests.UpdateThreadRequest;
 import api.utils.requests.VoteRequest;
 import api.utils.responses.BadResponse;
@@ -15,6 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.sql.SQLException;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -37,7 +37,7 @@ public class ThreadController {
 
     @PostMapping(path = "/{slug_or_id}/create")
     public ResponseEntity createPosts(@PathVariable String slug_or_id,
-                                      @RequestBody List<CreatePostRequest> request) {
+                                      @RequestBody List<Post> request) {
         try {
             final Thread thread = threadService.getThreadBySlugOrId(slug_or_id);
             return ResponseEntity.status(HttpStatus.CREATED).body(postService.createPosts(request, thread));
@@ -45,6 +45,8 @@ public class ThreadController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new BadResponse("Can't find such thread"));
         } catch (NoSuchElementException e) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(new BadResponse(e.getMessage()));
+        } catch (SQLException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new BadResponse("Error"));
         }
     }
 

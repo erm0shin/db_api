@@ -37,6 +37,8 @@ public class CreatePostRequest {
         return id;
     }
 
+
+
     public String getAuthor() {
         return author;
     }

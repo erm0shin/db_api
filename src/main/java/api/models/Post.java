@@ -1,6 +1,8 @@
 package api.models;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
 
@@ -30,6 +32,25 @@ public class Post {
         this.parent = parent;
         this.thread = thread;
         this.path = (List<Long>)path;
+    }
+
+    @JsonCreator
+    public Post(@JsonProperty(value = "id") Long id,
+                             @JsonProperty(value = "author") String author,
+                             @JsonProperty(value = "created") String created,
+                             @JsonProperty(value = "forum") String forum,
+                             @JsonProperty(value = "isEdited") Boolean isEdited,
+                             @JsonProperty(value = "message") String message,
+                             @JsonProperty(value = "parent") Long parent,
+                             @JsonProperty(value = "thread") Integer thread) {
+        this.id = id;
+        this.author = author;
+        this.created = created;
+        this.forum = forum;
+        this.isEdited = isEdited;
+        this.message = message;
+        this.parent = parent;
+        this.thread = thread;
     }
 
     public Long getId() {

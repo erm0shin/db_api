@@ -2,7 +2,6 @@ package api.services;
 
 import api.models.Post;
 import api.models.Thread;
-import api.utils.requests.CreatePostRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -10,6 +9,10 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -52,34 +55,62 @@ public class PostService {
     }
 
 
-    @SuppressWarnings({"unused", "ThrowInsideCatchBlockWhichIgnoresCaughtException"})
-    public List<Post> createPosts(List<CreatePostRequest> request, Thread thread) {
-        final String query = "INSERT INTO posts (id, author, created, forum, isEdited, message, parent, thread_id, path) "
+    @SuppressWarnings({"unused", "ThrowInsideCatchBlockWhichIgnoresCaughtException", "ConstantConditions", "JDBCResourceOpenedButNotSafelyClosed", "TooBroadScope"})
+    public List<Post> createPosts(List<Post> request, Thread thread) throws SQLException {
+        final String postQuery = "INSERT INTO posts (id, author, created, forum, isEdited, message, parent, thread_id, path) "
                 + "VALUES (?, ?, ?::TIMESTAMPTZ, ?, ?, ?, ?, ?, (SELECT path FROM posts p WHERE p.id = ?) || ?::BIGINT) RETURNING *";
+        final String forumMembersQuery = "INSERT INTO forum_members (user_id, forum_id) VALUES "
+                + " ((SELECT id FROM users WHERE LOWER(nickname) = LOWER(?)), (SELECT id FROM forums WHERE LOWER(slug) = LOWER(?)))";
         final String created = ZonedDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"));
         final String forum = thread.getForum();
         final List<Post> response = new ArrayList<>();
-        for (final CreatePostRequest post : request) {
-            final Long newId = template.queryForObject("SELECT nextval('posts_id_seq')", Long.class);
-            if (post.getParent() != null && post.getParent() != 0) {
-                try {
-                    final Integer parentPostThread = template.queryForObject("SELECT p.thread_id FROM posts p WHERE p.id = ?",
-                            Integer.class, post.getParent());
-                    if (!Objects.equals(parentPostThread, thread.getId())) {
-                        throw new NoSuchElementException("Parent post was created in another thread");
+        try (final Connection postConnection = template.getDataSource().getConnection();
+            final PreparedStatement postPS = postConnection.prepareStatement(postQuery, Statement.NO_GENERATED_KEYS);
+            final Connection forumMembersConnection = template.getDataSource().getConnection();
+            final PreparedStatement forumMembersPS = forumMembersConnection.prepareStatement(forumMembersQuery, Statement.NO_GENERATED_KEYS)) {
+            for (final Post post : request) {
+                final Long newId = template.queryForObject("SELECT nextval('posts_id_seq')", Long.class);
+                if (post.getParent() != null && post.getParent() != 0) {
+                    try {
+                        final Integer parentPostThread = template.queryForObject("SELECT p.thread_id FROM posts p WHERE p.id = ?",
+                                Integer.class, post.getParent());
+                        if (!Objects.equals(parentPostThread, thread.getId())) {
+                            throw new NoSuchElementException("Parent post was created in another thread");
+                        }
+                    } catch (EmptyResultDataAccessException e) {
+                        throw new NoSuchElementException("Any parentpost field missed");
                     }
-                } catch (EmptyResultDataAccessException e) {
-                    throw new NoSuchElementException("Any parentpost field missed");
+                } else {
+                    post.setParent(0L);
                 }
-            } else {
-                post.setParent(0L);
+                post.setId(newId);
+                post.setAuthor(userService.getUserByNickname(post.getAuthor()).getNickname());
+                post.setCreated(created);
+                post.setForum(forum);
+                post.setIsEdited(false);
+                post.setThread(thread.getId());
+
+                postPS.setLong(1, newId);
+                postPS.setString(2, post.getAuthor());
+                postPS.setString(3, created);
+                postPS.setString(4, forum);
+                postPS.setBoolean(5, false);
+                postPS.setString(6, post.getMessage());
+                postPS.setLong(7, post.getParent());
+                postPS.setInt(8, thread.getId());
+                postPS.setLong(9, post.getParent());
+                postPS.setLong(10, newId);
+                postPS.addBatch();
+                response.add(post);
+
+                forumMembersPS.setString(1, post.getAuthor());
+                forumMembersPS.setString(2, forum);
+                forumMembersPS.addBatch();
             }
-            response.add(template.queryForObject(query, POST_ROW_MAPPER, newId,
-                    userService.getUserByNickname(post.getAuthor()).getNickname(), created, forum,
-                    false, post.getMessage(), post.getParent(), thread.getId(), post.getParent(), newId));
-            final String forumMembersQuery = "INSERT INTO forum_members (user_id, forum_id) VALUES "
-                    + " ((SELECT id FROM users WHERE LOWER(nickname) = LOWER(?)), (SELECT id FROM forums WHERE LOWER(slug) = LOWER(?)))";
-            template.update(forumMembersQuery, post.getAuthor(), forum);
+            postPS.executeBatch();
+            postConnection.close();
+            forumMembersPS.executeBatch();
+            forumMembersConnection.close();
         }
         template.update("UPDATE forums SET posts = posts + ? WHERE LOWER(slug) = LOWER(?)", request.size(), forum);
         return response;
